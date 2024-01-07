@@ -10,6 +10,8 @@
     - [Status](#status)
     - [Configuration](#config)
 - [Python](#python)
+  - [example 1](#ex1)
+  - [example 2](#ex2)
 - [License](#license)
 
 </details>
@@ -54,7 +56,8 @@ apt install python3-pip
 ```commandline
 pip3 install fluent-logger requests
 ```
-### Example code
+<a name="ex1"></a>
+### Example code 1
 ```python
 from fluent import sender
 from fluent import event
@@ -89,7 +92,38 @@ event.Event('wikipedia_article_count', {
 })
 
 ```
+<a name="ex2"></a>
+### Example code 2
+```python
+import http.server
+import socketserver
+from fluent import sender
+from fluent import event
 
+# Fluentd setup
+sender.setup('fluentd.test', host='localhost', port=24225)
+
+# Define the Fluentd tag for access logs
+fluentd_tag = 'http_access_log'
+
+# Create a custom HTTP request handler to log requests
+class CustomRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        log_message = format % args
+        # Log the access log to Fluentd
+        event.Event(fluentd_tag, {'message': log_message})
+
+# Start an HTTP server with the custom request handler
+with socketserver.TCPServer(("", 8080), CustomRequestHandler) as httpd:
+    print("Listening on port 8080...")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nServer terminated.")
+
+# Close the Fluentd sender (not reached in this example)
+sender.close()
+```
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
